@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cuentas Claras</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f2;--card:#fff;--ink:#16241d;--mute:#5d6e65;--pri:#0f6b4f;--pos:#0f6b4f;--neg:#b3382c;--line:#d8e1da}
+@media(prefers-color-scheme:dark){:root{--bg:#101a15;--card:#18251f;--ink:#e8f0ea;--mute:#9bb0a4;--pri:#4cc79a;--pos:#4cc79a;--neg:#ff8f82;--line:#2a3b32}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+h1,h2{font-family:'Bricolage Grotesque',sans-serif;margin:0 0 12px}h1{font-size:2rem;font-weight:800}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+input,select{width:100%;padding:10px;margin:4px 0 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+button{background:var(--pri);color:var(--bg);border:0;padding:10px 16px;border-radius:6px;font:600 1rem Figtree;cursor:pointer}
+button.ghost{background:none;color:var(--pri);border:1px solid var(--pri)}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);gap:8px}.row:last-child{border:0}
+.pos{color:var(--pos);font-weight:600}.neg{color:var(--neg);font-weight:600}.mute{color:var(--mute);font-size:.9rem}
+a.g{color:var(--ink);text-decoration:none;font-weight:600;cursor:pointer}.err{color:var(--neg);min-height:1.4em}
+label.chk{display:inline-flex;gap:6px;align-items:center;margin-right:12px}label.chk input{width:auto;margin:0}
+</style></head><body><main id="app"></main>
+<script>
+const $=s=>document.querySelector(s), app=$('#app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=c=>'$'+(c/100).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2});
+let tok=localStorage.tok, me=JSON.parse(localStorage.me||'null');
+async function api(p,m='GET',b){const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:b?JSON.stringify(b):undefined});
+ const d=await r.json();if(r.status===401&&tok){logout();}if(!r.ok)throw new Error(d.error||'Error');return d}
+function logout(){localStorage.clear();tok=me=null;login()}
+function shell(inner){app.innerHTML=`<header><h1>Cuentas Claras</h1>${me?`<span class="mute">${esc(me.name)} <button class="ghost" onclick="logout()">Salir</button></span>`:''}</header>${inner}`}
+function login(mode='login'){
+ shell(`<div class="card"><h2>${mode==='login'?'Inicia sesión':'Crea tu cuenta'}</h2>
+ ${mode==='register'?'<label>Nombre<input id="n"></label>':''}
+ <label>Correo<input id="e" type="email"></label><label>Contraseña<input id="p" type="password"></label>
+ <p class="err" id="err"></p><button id="go">${mode==='login'?'Entrar':'Registrarme'}</button>
+ <button class="ghost" id="sw">${mode==='login'?'Crear cuenta':'Ya tengo cuenta'}</button></div>`);
+ $('#sw').onclick=()=>login(mode==='login'?'register':'login');
+ $('#go').onclick=async()=>{try{const d=await api('/auth/'+mode,'POST',{name:$('#n')?.value,email:$('#e').value,password:$('#p').value});
+  tok=d.token;me=d.user;localStorage.tok=tok;localStorage.me=JSON.stringify(me);groups()}catch(e){$('#err').textContent=e.message}};
+}
+async function groups(){
+ const gs=await api('/groups');
+ shell(`<div class="card"><h2>Mis grupos</h2>${gs.length?gs.map(g=>`<div class="row"><a class="g" onclick="group(${g.id})">${esc(g.name)}</a></div>`).join(''):'<p class="mute">Aún no tienes grupos. Crea el primero.</p>'}</div>
+ <div class="card"><h2>Nuevo grupo</h2><input id="gn" placeholder="Ej. Viaje a Cartagena"><p class="err" id="err"></p><button id="mk">Crear grupo</button></div>`);
+ $('#mk').onclick=async()=>{try{const g=await api('/groups','POST',{name:$('#gn').value});group(g.id)}catch(e){$('#err').textContent=e.message}};
+}
+async function group(id){
+ const d=await api('/groups/'+id), name=Object.fromEntries(d.members.map(m=>[m.id,m.name]));
+ shell(`<p><a class="g" onclick="groups()">← Mis grupos</a></p><h2>${esc(d.group.name)}</h2>
+ <div class="card"><h2>Balances</h2>${d.members.map(m=>{const v=d.balances[m.id];return `<div class="row"><span>${esc(m.name)}</span><span class="${v>=0?'pos':'neg'}">${v>=0?'le deben ':'debe '}${money(Math.abs(v))}</span></div>`}).join('')}</div>
+ <div class="card"><h2>Cómo saldar</h2>${d.transfers.length?d.transfers.map(t=>`<div class="row"><span>${esc(name[t.from])} paga a ${esc(name[t.to])}: <b>${money(t.amount)}</b></span>${t.from===me.id?`<button class="ghost" onclick="settle(${id},${t.to},${t.amount/100})">Marcar pagado</button>`:''}</div>`).join(''):'<p class="mute">Todo está saldado.</p>'}</div>
+ <div class="card"><h2>Nuevo gasto</h2><input id="d" placeholder="Descripción"><input id="a" type="number" min="0" step="0.01" placeholder="Monto">
+ <label>Pagó<select id="pb">${d.members.map(m=>`<option value="${m.id}" ${m.id===me.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label>
+ <div>Dividir entre: ${d.members.map(m=>`<label class="chk"><input type="checkbox" class="pt" value="${m.id}" checked>${esc(m.name)}</label>`).join('')}</div>
+ <p class="err" id="err"></p><button id="ad">Guardar gasto</button></div>
+ <div class="card"><h2>Gastos</h2>${d.expenses.length?d.expenses.map(e=>`<div class="row"><span>${esc(e.description)}<br><span class="mute">Pagó ${esc(e.paid_by_name)}</span></span><span>${money(e.amount)} <button class="ghost" onclick="delExp(${id},${e.id})" aria-label="Eliminar">✕</button></span></div>`).join(''):'<p class="mute">Sin gastos todavía.</p>'}</div>
+ <div class="card"><h2>Invitar miembro</h2><input id="em" type="email" placeholder="Correo de un usuario registrado"><p class="err" id="err2"></p><button id="inv">Agregar al grupo</button></div>`);
+ $('#ad').onclick=async()=>{try{await api(`/groups/${id}/expenses`,'POST',{description:$('#d').value,amount:$('#a').value,paid_by:+$('#pb').value,participants:[...document.querySelectorAll('.pt:checked')].map(c=>+c.value)});group(id)}catch(e){$('#err').textContent=e.message}};
+ $('#inv').onclick=async()=>{try{await api(`/groups/${id}/members`,'POST',{email:$('#em').value});group(id)}catch(e){$('#err2').textContent=e.message}};
+}
+async function settle(id,to,amount){await api(`/groups/${id}/settlements`,'POST',{to_user:to,amount});group(id)}
+async function delExp(id,e){if(confirm('¿Eliminar este gasto?')){await api(`/groups/${id}/expenses/${e}`,'DELETE');group(id)}}
+tok?groups().catch(()=>login()):login();
+</script></body></html>

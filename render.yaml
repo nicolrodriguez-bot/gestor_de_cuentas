@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: cuentas-claras
+    runtime: docker
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: /data/data.db
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
