@@ -4,7 +4,7 @@ Aplicación web para repartir gastos en grupo y saber quién le debe a quién (e
 
 **Stack:** Node.js + Express + SQLite (backend) · HTML/CSS/JS (frontend servido por Express) · JWT + bcrypt (autenticación propia).
 
-## Funcionalidades del prototipo (~55%)
+## Funcionalidades del prototipo
 - [x] Registro e inicio de sesión
 - [x] Crear grupos e invitar miembros por correo
 - [x] Registrar y eliminar gastos con división equitativa entre participantes
