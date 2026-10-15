@@ -1,13 +1,12 @@
-{
+﻿{
   "name": "cuentas-claras",
   "version": "0.1.0",
   "description": "Plataforma para repartir gastos en grupo (tipo Splitwise)",
   "main": "server.js",
   "scripts": { "start": "node server.js", "test": "node test.js" },
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22.5" },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2"

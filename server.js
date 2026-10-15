@@ -1,12 +1,13 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const express = require('express');
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET || 'dev-secret-inseguro';
-const db = new Database(process.env.DB_PATH || 'data.db');
-db.pragma('foreign_keys = ON');
+const db = new DatabaseSync(process.env.DB_PATH || 'data.db');
+db.exec('PRAGMA foreign_keys = ON');
+const tx = fn => { db.exec('BEGIN'); try { fn(); db.exec('COMMIT'); } catch (e) { db.exec('ROLLBACK'); throw e; } };
 db.exec(`
 CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS groups(id INTEGER PRIMARY KEY, name TEXT NOT NULL, owner_id INTEGER NOT NULL REFERENCES users(id));
@@ -16,7 +17,7 @@ CREATE TABLE IF NOT EXISTS splits(expense_id INTEGER REFERENCES expenses(id) ON 
 CREATE TABLE IF NOT EXISTS settlements(id INTEGER PRIMARY KEY, group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE, from_user INTEGER, to_user INTEGER, amount INTEGER NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 `);
 
-// ---------- Lógica de negocio (montos en centavos) ----------
+// ---------- LÃ³gica de negocio (montos en centavos) ----------
 function splitEqual(amount, ids) {
   const base = Math.floor(amount / ids.length);
   let rest = amount - base * ids.length;
@@ -50,7 +51,7 @@ app.use(express.static('public'));
 
 const auth = (req, res, next) => {
   try { req.user = jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), SECRET); next(); }
-  catch { res.status(401).json({ error: 'Sesión no válida. Inicia sesión de nuevo.' }); }
+  catch { res.status(401).json({ error: 'SesiÃ³n no vÃ¡lida. Inicia sesiÃ³n de nuevo.' }); }
 };
 const token = u => jwt.sign({ id: u.id, name: u.name, email: u.email }, SECRET, { expiresIn: '7d' });
 const isMember = (gid, uid) => db.prepare('SELECT 1 FROM members WHERE group_id=? AND user_id=?').get(gid, uid);
@@ -59,15 +60,15 @@ const cents = v => Math.round(Number(v) * 100);
 
 app.post('/api/auth/register', (req, res) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password || password.length < 6) return res.status(400).json({ error: 'Completa nombre, correo y una contraseña de 6+ caracteres.' });
-  if (db.prepare('SELECT 1 FROM users WHERE email=?').get(email.toLowerCase())) return res.status(409).json({ error: 'Ese correo ya está registrado.' });
+  if (!name || !email || !password || password.length < 6) return res.status(400).json({ error: 'Completa nombre, correo y una contraseÃ±a de 6+ caracteres.' });
+  if (db.prepare('SELECT 1 FROM users WHERE email=?').get(email.toLowerCase())) return res.status(409).json({ error: 'Ese correo ya estÃ¡ registrado.' });
   const r = db.prepare('INSERT INTO users(name,email,password) VALUES(?,?,?)').run(name, email.toLowerCase(), bcrypt.hashSync(password, 10));
-  const u = { id: r.lastInsertRowid, name, email: email.toLowerCase() };
+  const u = { id: Number(r.lastInsertRowid), name, email: email.toLowerCase() };
   res.json({ token: token(u), user: u });
 });
 app.post('/api/auth/login', (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE email=?').get((req.body.email || '').toLowerCase());
-  if (!u || !bcrypt.compareSync(req.body.password || '', u.password)) return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
+  if (!u || !bcrypt.compareSync(req.body.password || '', u.password)) return res.status(401).json({ error: 'Correo o contraseÃ±a incorrectos.' });
   res.json({ token: token(u), user: { id: u.id, name: u.name, email: u.email } });
 });
 
@@ -75,8 +76,8 @@ app.get('/api/groups', auth, (req, res) => res.json(db.prepare('SELECT g.id,g.na
 app.post('/api/groups', auth, (req, res) => {
   if (!req.body.name) return res.status(400).json({ error: 'Ponle un nombre al grupo.' });
   const r = db.prepare('INSERT INTO groups(name,owner_id) VALUES(?,?)').run(req.body.name, req.user.id);
-  db.prepare('INSERT INTO members VALUES(?,?)').run(r.lastInsertRowid, req.user.id);
-  res.json({ id: r.lastInsertRowid, name: req.body.name });
+  db.prepare('INSERT INTO members VALUES(?,?)').run(Number(r.lastInsertRowid), req.user.id);
+  res.json({ id: Number(r.lastInsertRowid), name: req.body.name });
 });
 app.get('/api/groups/:id', auth, guard, (req, res) => {
   const gid = req.params.id, b = balances(gid);
@@ -89,19 +90,19 @@ app.get('/api/groups/:id', auth, guard, (req, res) => {
 });
 app.post('/api/groups/:id/members', auth, guard, (req, res) => {
   const u = db.prepare('SELECT id FROM users WHERE email=?').get((req.body.email || '').toLowerCase());
-  if (!u) return res.status(404).json({ error: 'No existe un usuario con ese correo. Pídele que se registre primero.' });
+  if (!u) return res.status(404).json({ error: 'No existe un usuario con ese correo. PÃ­dele que se registre primero.' });
   db.prepare('INSERT OR IGNORE INTO members VALUES(?,?)').run(req.params.id, u.id);
   res.json({ ok: true });
 });
 app.post('/api/groups/:id/expenses', auth, guard, (req, res) => {
   const { description, amount, paid_by, participants } = req.body, amt = cents(amount);
-  if (!description || !(amt > 0) || !Array.isArray(participants) || !participants.length) return res.status(400).json({ error: 'Indica descripción, monto mayor a 0 y quién participa.' });
+  if (!description || !(amt > 0) || !Array.isArray(participants) || !participants.length) return res.status(400).json({ error: 'Indica descripciÃ³n, monto mayor a 0 y quiÃ©n participa.' });
   const ids = [paid_by, ...participants];
   if (!ids.every(id => isMember(req.params.id, id))) return res.status(400).json({ error: 'Todos deben ser miembros del grupo.' });
-  db.transaction(() => {
+  tx(() => {
     const r = db.prepare('INSERT INTO expenses(group_id,paid_by,amount,description) VALUES(?,?,?,?)').run(req.params.id, paid_by, amt, description);
-    splitEqual(amt, participants).forEach(s => db.prepare('INSERT INTO splits VALUES(?,?,?)').run(r.lastInsertRowid, s.user_id, s.share));
-  })();
+    splitEqual(amt, participants).forEach(s => db.prepare('INSERT INTO splits VALUES(?,?,?)').run(Number(r.lastInsertRowid), s.user_id, s.share));
+  });
   res.json({ ok: true });
 });
 app.delete('/api/groups/:id/expenses/:eid', auth, guard, (req, res) => {
@@ -110,10 +111,11 @@ app.delete('/api/groups/:id/expenses/:eid', auth, guard, (req, res) => {
 });
 app.post('/api/groups/:id/settlements', auth, guard, (req, res) => {
   const amt = cents(req.body.amount), to = req.body.to_user;
-  if (!(amt > 0) || !isMember(req.params.id, to)) return res.status(400).json({ error: 'Monto o destinatario no válido.' });
+  if (!(amt > 0) || !isMember(req.params.id, to)) return res.status(400).json({ error: 'Monto o destinatario no vÃ¡lido.' });
   db.prepare('INSERT INTO settlements(group_id,from_user,to_user,amount) VALUES(?,?,?,?)').run(req.params.id, req.body.from_user || req.user.id, to, amt);
   res.json({ ok: true });
 });
 
 module.exports = { app, splitEqual, simplify };
 if (require.main === module) app.listen(process.env.PORT || 3000, () => console.log('Cuentas Claras en puerto ' + (process.env.PORT || 3000)));
+
