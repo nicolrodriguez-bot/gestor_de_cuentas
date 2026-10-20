@@ -17,11 +17,22 @@ CREATE TABLE IF NOT EXISTS splits(expense_id INTEGER REFERENCES expenses(id) ON 
 CREATE TABLE IF NOT EXISTS settlements(id INTEGER PRIMARY KEY, group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE, from_user INTEGER, to_user INTEGER, amount INTEGER NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 `);
 
-// ---------- LÃ³gica de negocio (montos en centavos) ----------
+// ---------- Lógica de negocio (montos en centavos) ----------
 function splitEqual(amount, ids) {
   const base = Math.floor(amount / ids.length);
   let rest = amount - base * ids.length;
   return ids.map(id => ({ user_id: id, share: base + (rest-- > 0 ? 1 : 0) }));
+}
+// Reparto por porcentajes. items: [{ user_id, percent }] que suman 100.
+// Trabaja en centésimas de punto porcentual para evitar errores de decimales.
+function splitByPercent(amount, items) {
+  const parts = items.map(i => {
+    const bp = Math.round(Number(i.percent) * 100);
+    return { user_id: i.user_id, share: Math.floor(amount * bp / 10000), frac: (amount * bp) % 10000 };
+  });
+  let rest = amount - parts.reduce((s, p) => s + p.share, 0);
+  [...parts].sort((a, b) => b.frac - a.frac).forEach(p => { if (rest-- > 0) p.share++; });
+  return parts.map(({ user_id, share }) => ({ user_id, share }));
 }
 function balances(gid) {
   const b = {};
@@ -51,7 +62,7 @@ app.use(express.static('public'));
 
 const auth = (req, res, next) => {
   try { req.user = jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), SECRET); next(); }
-  catch { res.status(401).json({ error: 'SesiÃ³n no vÃ¡lida. Inicia sesiÃ³n de nuevo.' }); }
+  catch { res.status(401).json({ error: 'Sesión no válida. Inicia sesión de nuevo.' }); }
 };
 const token = u => jwt.sign({ id: u.id, name: u.name, email: u.email }, SECRET, { expiresIn: '7d' });
 const isMember = (gid, uid) => db.prepare('SELECT 1 FROM members WHERE group_id=? AND user_id=?').get(gid, uid);
@@ -60,15 +71,15 @@ const cents = v => Math.round(Number(v) * 100);
 
 app.post('/api/auth/register', (req, res) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password || password.length < 6) return res.status(400).json({ error: 'Completa nombre, correo y una contraseÃ±a de 6+ caracteres.' });
-  if (db.prepare('SELECT 1 FROM users WHERE email=?').get(email.toLowerCase())) return res.status(409).json({ error: 'Ese correo ya estÃ¡ registrado.' });
+  if (!name || !email || !password || password.length < 6) return res.status(400).json({ error: 'Completa nombre, correo y una contraseña de 6+ caracteres.' });
+  if (db.prepare('SELECT 1 FROM users WHERE email=?').get(email.toLowerCase())) return res.status(409).json({ error: 'Ese correo ya está registrado.' });
   const r = db.prepare('INSERT INTO users(name,email,password) VALUES(?,?,?)').run(name, email.toLowerCase(), bcrypt.hashSync(password, 10));
   const u = { id: Number(r.lastInsertRowid), name, email: email.toLowerCase() };
   res.json({ token: token(u), user: u });
 });
 app.post('/api/auth/login', (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE email=?').get((req.body.email || '').toLowerCase());
-  if (!u || !bcrypt.compareSync(req.body.password || '', u.password)) return res.status(401).json({ error: 'Correo o contraseÃ±a incorrectos.' });
+  if (!u || !bcrypt.compareSync(req.body.password || '', u.password)) return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
   res.json({ token: token(u), user: { id: u.id, name: u.name, email: u.email } });
 });
 
@@ -90,18 +101,29 @@ app.get('/api/groups/:id', auth, guard, (req, res) => {
 });
 app.post('/api/groups/:id/members', auth, guard, (req, res) => {
   const u = db.prepare('SELECT id FROM users WHERE email=?').get((req.body.email || '').toLowerCase());
-  if (!u) return res.status(404).json({ error: 'No existe un usuario con ese correo. PÃ­dele que se registre primero.' });
+  if (!u) return res.status(404).json({ error: 'No existe un usuario con ese correo. Pídele que se registre primero.' });
   db.prepare('INSERT OR IGNORE INTO members VALUES(?,?)').run(req.params.id, u.id);
   res.json({ ok: true });
 });
 app.post('/api/groups/:id/expenses', auth, guard, (req, res) => {
-  const { description, amount, paid_by, participants } = req.body, amt = cents(amount);
-  if (!description || !(amt > 0) || !Array.isArray(participants) || !participants.length) return res.status(400).json({ error: 'Indica descripciÃ³n, monto mayor a 0 y quiÃ©n participa.' });
-  const ids = [paid_by, ...participants];
+  const { description, amount, paid_by, participants, splits } = req.body, amt = cents(amount);
+  let parts = null;
+  if (Array.isArray(splits)) {
+    // División por porcentajes: deben sumar exactamente 100
+    const clean = splits.map(s => ({ user_id: Number(s.user_id), percent: Number(s.percent) })).filter(s => s.percent > 0);
+    const total = clean.reduce((t, s) => t + Math.round(s.percent * 100), 0);
+    if (!clean.length || total !== 10000) return res.status(400).json({ error: 'Los porcentajes deben sumar exactamente 100%.' });
+    if (amt > 0) parts = splitByPercent(amt, clean);
+  } else if (Array.isArray(participants) && participants.length) {
+    // División en partes iguales
+    if (amt > 0) parts = splitEqual(amt, participants);
+  }
+  if (!description || !(amt > 0) || !parts) return res.status(400).json({ error: 'Indica descripción, monto mayor a 0 y quién participa.' });
+  const ids = [paid_by, ...parts.map(p => p.user_id)];
   if (!ids.every(id => isMember(req.params.id, id))) return res.status(400).json({ error: 'Todos deben ser miembros del grupo.' });
   tx(() => {
     const r = db.prepare('INSERT INTO expenses(group_id,paid_by,amount,description) VALUES(?,?,?,?)').run(req.params.id, paid_by, amt, description);
-    splitEqual(amt, participants).forEach(s => db.prepare('INSERT INTO splits VALUES(?,?,?)').run(Number(r.lastInsertRowid), s.user_id, s.share));
+    parts.forEach(s => db.prepare('INSERT INTO splits VALUES(?,?,?)').run(Number(r.lastInsertRowid), s.user_id, s.share));
   });
   res.json({ ok: true });
 });
@@ -111,11 +133,10 @@ app.delete('/api/groups/:id/expenses/:eid', auth, guard, (req, res) => {
 });
 app.post('/api/groups/:id/settlements', auth, guard, (req, res) => {
   const amt = cents(req.body.amount), to = req.body.to_user;
-  if (!(amt > 0) || !isMember(req.params.id, to)) return res.status(400).json({ error: 'Monto o destinatario no vÃ¡lido.' });
+  if (!(amt > 0) || !isMember(req.params.id, to)) return res.status(400).json({ error: 'Monto o destinatario no válido.' });
   db.prepare('INSERT INTO settlements(group_id,from_user,to_user,amount) VALUES(?,?,?,?)').run(req.params.id, req.body.from_user || req.user.id, to, amt);
   res.json({ ok: true });
 });
 
-module.exports = { app, splitEqual, simplify };
+module.exports = { app, splitEqual, splitByPercent, simplify };
 if (require.main === module) app.listen(process.env.PORT || 3000, () => console.log('Cuentas Claras en puerto ' + (process.env.PORT || 3000)));
-
