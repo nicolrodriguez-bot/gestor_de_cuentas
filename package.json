@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "description": "Plataforma para repartir gastos en grupo (tipo Splitwise)",
   "main": "server.js",
-  "scripts": { "start": "node server.js", "test": "node test.js" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js && node test.api.js"
+  },
   "engines": { "node": ">=22.5" },
   "dependencies": {
     "bcryptjs": "^2.4.3",

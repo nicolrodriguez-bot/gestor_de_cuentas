@@ -2,6 +2,7 @@ services:
   - type: web
     name: cuentas-claras
     runtime: docker
+    healthCheckPath: /api/health
     envVars:
       - key: JWT_SECRET
         generateValue: true

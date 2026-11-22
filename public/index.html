@@ -1,62 +1,278 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
 <title>Cuentas Claras</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23a5d6fb'/%3E%3Cpath d='M10 12h12l-3.5-3.5M22 20H10l3.5 3.5' fill='none' stroke='%2308304e' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f3f6f2;--card:#fff;--ink:#16241d;--mute:#5d6e65;--pri:#0f6b4f;--pos:#0f6b4f;--neg:#b3382c;--line:#d8e1da}
-@media(prefers-color-scheme:dark){:root{--bg:#101a15;--card:#18251f;--ink:#e8f0ea;--mute:#9bb0a4;--pri:#4cc79a;--pos:#4cc79a;--neg:#ff8f82;--line:#2a3b32}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
-main{max-width:720px;margin:0 auto;padding:20px 16px 60px}
-h1,h2{font-family:'Bricolage Grotesque',sans-serif;margin:0 0 12px}h1{font-size:2rem;font-weight:800}
-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
-input,select{width:100%;padding:10px;margin:4px 0 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
-button{background:var(--pri);color:var(--bg);border:0;padding:10px 16px;border-radius:6px;font:600 1rem Figtree;cursor:pointer}
-button.ghost{background:none;color:var(--pri);border:1px solid var(--pri)}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
-.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);gap:8px}.row:last-child{border:0}
-.pos{color:var(--pos);font-weight:600}.neg{color:var(--neg);font-weight:600}.mute{color:var(--mute);font-size:.9rem}
-a.g{color:var(--ink);text-decoration:none;font-weight:600;cursor:pointer}.err{color:var(--neg);min-height:1.4em}
-label.chk{display:inline-flex;gap:6px;align-items:center;margin-right:12px}label.chk input{width:auto;margin:0}
+/* ---------- Colores (fondo blanco, botones azul claro) ---------- */
+:root{
+  --bg:#ffffff; --card:#ffffff; --ink:#0f2233; --mute:#5b6b7a; --line:#e3e9ef; --field:#f6f9fc;
+  --btn:#a5d6fb; --btn-hover:#8ec8f6; --btn-ink:#08304e;
+  --blue:#2b86d1; --blue-dark:#1d6fb4; --blue-soft:#eaf5fe;
+  --pos:#0f7a55; --pos-soft:#e5f6ee; --neg:#c0392b; --neg-soft:#fdecea;
+  --shadow:0 1px 2px rgba(15,34,51,.05),0 8px 24px rgba(15,34,51,.07);
+  --radius:16px;
+}
+
+/* ---------- Base ---------- */
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 72px}
+main.auth{min-height:100vh;display:flex;flex-direction:column;justify-content:center;max-width:440px}
+h1,h2{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.hic{width:32px;height:32px;border-radius:10px;background:var(--blue-soft);color:var(--blue-dark);display:grid;place-items:center;flex:none}
+.hic svg{width:18px;height:18px}
+svg{display:block}
+button,input,select{font:inherit}
+
+/* ---------- Cabecera ---------- */
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font:800 1.4rem 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em}
+.logo{width:38px;height:38px;border-radius:12px;background:var(--btn);color:var(--btn-ink);display:grid;place-items:center;flex:none}
+.logo svg{width:22px;height:22px}
+.user{display:flex;align-items:center;gap:10px}
+.user .nm{font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- Tarjetas y animación ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card,.stats,.hero{animation:up .35s ease both}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- Formularios y botones ---------- */
+label{display:block;font-size:.88rem;font-weight:600;color:var(--mute)}
+input,select{width:100%;padding:11px 13px;margin:5px 0 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink);transition:border-color .15s,box-shadow .15s}
+input::placeholder{color:var(--mute);opacity:.7}
+input:hover,select:hover{border-color:#c5d3df}
+input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--btn);color:var(--btn-ink);border:1.5px solid var(--btn);padding:11px 18px;border-radius:10px;font-weight:700;cursor:pointer;transition:background .15s,transform .08s,border-color .15s}
+button svg{width:18px;height:18px;flex:none}
+button:hover{background:var(--btn-hover);border-color:var(--btn-hover)}
+button:active{transform:scale(.97)}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button.ghost{background:transparent;color:var(--blue-dark);border-color:var(--btn)}
+button.ghost:hover{background:var(--blue-soft);border-color:var(--blue)}
+button.sm{padding:7px 12px;font-size:.88rem}
+button.block{width:100%}
+.btns{display:flex;gap:10px;flex-wrap:wrap}.btns button{flex:1}
+.err{color:var(--neg);font-size:.92rem;font-weight:500;min-height:1.4em;margin:0 0 6px}
+.mute{color:var(--mute);font-size:.92rem}
+.empty{color:var(--mute);text-align:center;padding:18px 8px;margin:0}
+
+/* ---------- Login ---------- */
+.hero{text-align:center;margin-bottom:24px}
+.hero .logo{width:60px;height:60px;border-radius:18px;margin:0 auto 16px}
+.hero .logo svg{width:34px;height:34px}
+.hero h1{font-size:2.4rem;font-weight:800}
+.hero p{margin:6px 0 0;color:var(--mute);font-size:1.05rem}
+
+/* ---------- Avatares ---------- */
+.av{--h:205;width:38px;height:38px;border-radius:50%;display:inline-grid;place-items:center;flex:none;font:700 .95rem 'Bricolage Grotesque',sans-serif;
+  background:hsl(var(--h) 70% 91%);color:hsl(var(--h) 55% 26%)}
+.av.sm{width:30px;height:30px;font-size:.8rem}
+.av.lg{width:46px;height:46px;font-size:1.15rem;border-radius:14px}
+
+/* ---------- Grupos ---------- */
+.glist{display:grid;gap:10px}
+a.gcard{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--field);color:var(--ink);text-decoration:none;font-weight:600;cursor:pointer;transition:transform .12s,border-color .15s,box-shadow .15s}
+a.gcard:hover{transform:translateY(-2px);border-color:var(--btn-hover);box-shadow:var(--shadow)}
+a.gcard:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+a.gcard span.t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+a.gcard svg{width:18px;height:18px;color:var(--mute)}
+.newg{display:flex;gap:10px;align-items:flex-start}.newg input{margin:0}.newg button{flex:none}
+
+/* ---------- Detalle del grupo ---------- */
+a.back{display:inline-flex;align-items:center;gap:6px;color:var(--mute);text-decoration:none;font-weight:600;cursor:pointer;margin-bottom:10px}
+a.back:hover{color:var(--blue-dark)}a.back svg{width:16px;height:16px}
+.gtitle{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.gtitle h2{font-size:1.9rem;font-weight:800;margin:0;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.stat small{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.stat small svg{width:15px;height:15px;color:var(--blue)}
+.stat b{display:block;font:800 1.25rem 'Bricolage Grotesque',sans-serif;margin-top:6px;overflow-wrap:anywhere}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+
+.bal{padding:12px 0;border-bottom:1px solid var(--line)}.bal:last-child{border:0;padding-bottom:0}.bal:first-of-type{padding-top:0}
+.bal .top{display:flex;align-items:center;gap:12px}
+.who{flex:1;display:flex;align-items:center;gap:12px;font-weight:600;min-width:0}.who span:last-child{overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-block;padding:4px 12px;border-radius:99px;font-size:.88rem;font-weight:700;white-space:nowrap}
+.chip.pos{background:var(--pos-soft)}.chip.neg{background:var(--neg-soft)}.chip.zero{background:var(--field);color:var(--mute)}
+.bar{height:6px;background:var(--field);border-radius:99px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+.bar i.pos{background:var(--pos)}.bar i.neg{background:var(--neg)}
+
+.tr{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}.tr:last-child{border:0;padding-bottom:0}.tr:first-of-type{padding-top:0}
+.flow{flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:200px;font-weight:600}
+.flow svg{width:18px;height:18px;color:var(--blue);flex:none}
+.amt{font:800 1.1rem 'Bricolage Grotesque',sans-serif}
+
+/* ---------- Nuevo gasto ---------- */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.form-grid .full{grid-column:1/-1}
+.seg{display:flex;gap:4px;padding:4px;background:var(--field);border:1px solid var(--line);border-radius:12px;margin:6px 0 14px}
+.seg button{flex:1;background:transparent;border:0;color:var(--mute);padding:9px 12px;border-radius:9px}
+.seg button:hover{background:var(--blue-soft);color:var(--blue-dark)}
+.seg button.on{background:var(--btn);color:var(--btn-ink)}
+.who-pick{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+label.chk{display:inline-flex;align-items:center;gap:8px;margin:0;padding:7px 14px;border:1.5px solid var(--line);border-radius:99px;background:var(--field);color:var(--ink);font-size:.92rem;cursor:pointer;transition:background .15s,border-color .15s}
+label.chk input{width:auto;margin:0;accent-color:var(--blue)}
+label.chk:has(input:checked){background:var(--blue-soft);border-color:var(--btn-hover)}
+.hint{display:flex;gap:10px;background:var(--blue-soft);border-radius:12px;padding:12px 14px;margin:0 0 14px;color:var(--ink);font-size:.9rem}
+.hint svg{width:18px;height:18px;color:var(--blue-dark);flex:none;margin-top:2px}
+.prow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.prow .who{min-width:130px}
+.pin{display:flex;align-items:center;gap:6px}
+.pin input{width:92px;margin:0;text-align:right;font-weight:700}
+.pct{font-weight:700;color:var(--mute)}
+.pv{flex:1;text-align:right;font-weight:600;color:var(--mute);min-width:90px}
+.sumline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 14px;font-weight:600}
+#sum.ok{color:var(--pos)}#sum.bad{color:var(--neg)}
+
+/* ---------- Gastos ---------- */
+.exp{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.exp:last-child{border:0;padding-bottom:0}.exp:first-of-type{padding-top:0}
+.exp .ic{width:42px;height:42px;border-radius:12px;background:var(--blue-soft);color:var(--blue-dark);display:grid;place-items:center;flex:none}
+.exp .ic svg{width:20px;height:20px}
+.exp .info{flex:1;min-width:0}.exp .info b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp .val{font:800 1.05rem 'Bricolage Grotesque',sans-serif;white-space:nowrap}
+button.icon{padding:8px;border-radius:9px;color:var(--mute)}
+button.icon:hover{color:var(--neg);border-color:var(--neg);background:var(--neg-soft)}
+
+@media(max-width:560px){
+  .stats{grid-template-columns:1fr 1fr}.stats .stat:first-child{grid-column:1/-1}
+  .form-grid{grid-template-columns:1fr}
+  .newg{flex-direction:column}.newg input,.newg button{width:100%}
+  .gtitle h2{font-size:1.5rem}
+  .user .nm{display:none}
+  .prow .who{flex:1 1 100%}.pv{text-align:left}
+}
 </style></head><body><main id="app"></main>
 <script>
 const $=s=>document.querySelector(s), app=$('#app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=c=>'$'+(c/100).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2});
 let tok=localStorage.tok, me=JSON.parse(localStorage.me||'null');
+
+/* ---------- Íconos (logotipos) y utilidades visuales ---------- */
+const P={
+ swap:'<path d="M7 8h12l-3.5-3.5M17 16H5l3.5 3.5"/>',
+ users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/>',
+ wallet:'<path d="M4 7a2 2 0 012-2h11v3"/><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="16.5" cy="13.5" r="1.2"/>',
+ scale:'<path d="M12 4v16M7 20h10M5 8h14M5 8l-3 7a3 3 0 006 0zM19 8l-3 7a3 3 0 006 0z"/>',
+ percent:'<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.3"/><circle cx="17" cy="17" r="2.3"/>',
+ equal:'<path d="M5 9h14M5 15h14"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7.5l8.5 6 8.5-6"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>',
+ trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/>',
+ arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+ back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+ chev:'<path d="M9 6l6 6-6 6"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+ login:'<path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4M10 8l-4 4 4 4M6 12h11"/>',
+ out:'<path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4M14 8l4 4-4 4M18 12H8"/>'
+};
+const ico=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+const hd=(t,i)=>`<h2><span class="hic">${ico(i)}</span>${t}</h2>`;
+const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return 170+h%80}; // tonos azul-turquesa
+const av=(n,cls='')=>`<span class="av ${cls}" style="--h:${hue(n)}" aria-hidden="true">${esc(String(n).trim().charAt(0).toUpperCase()||'?')}</span>`;
+const fdate=s=>{const d=new Date(String(s).replace(' ','T')+'Z');return isNaN(d)?'':d.toLocaleDateString('es-CO',{day:'numeric',month:'short'})};
+const eqBps=n=>Array.from({length:n},(_,i)=>Math.floor(10000/n)+(i<10000%n?1:0)); // reparto igual en centésimas de %
+
 async function api(p,m='GET',b){const r=await fetch('/api'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:b?JSON.stringify(b):undefined});
  const d=await r.json();if(r.status===401&&tok){logout();}if(!r.ok)throw new Error(d.error||'Error');return d}
 function logout(){localStorage.clear();tok=me=null;login()}
-function shell(inner){app.innerHTML=`<header><h1>Cuentas Claras</h1>${me?`<span class="mute">${esc(me.name)} <button class="ghost" onclick="logout()">Salir</button></span>`:''}</header>${inner}`}
+
+function shell(inner,authPage){
+ app.className=authPage?'auth':'';
+ app.innerHTML=authPage?inner:`<header><div class="brand"><span class="logo">${ico('swap')}</span>Cuentas Claras</div>${me?`<div class="user">${av(me.name,'sm')}<span class="nm">${esc(me.name)}</span><button class="ghost sm" onclick="logout()">${ico('out')}Salir</button></div>`:''}</header>${inner}`;
+}
+
+/* ---------- Pantallas ---------- */
 function login(mode='login'){
- shell(`<div class="card"><h2>${mode==='login'?'Inicia sesión':'Crea tu cuenta'}</h2>
- ${mode==='register'?'<label>Nombre<input id="n"></label>':''}
- <label>Correo<input id="e" type="email"></label><label>Contraseña<input id="p" type="password"></label>
- <p class="err" id="err"></p><button id="go">${mode==='login'?'Entrar':'Registrarme'}</button>
- <button class="ghost" id="sw">${mode==='login'?'Crear cuenta':'Ya tengo cuenta'}</button></div>`);
+ shell(`<div class="hero"><div class="logo">${ico('swap')}</div><h1>Cuentas Claras</h1><p>Reparte gastos en grupo sin discusiones.</p></div>
+ <div class="card">${hd(mode==='login'?'Inicia sesión':'Crea tu cuenta',mode==='login'?'login':'users')}
+ ${mode==='register'?'<label>Nombre<input id="n" autocomplete="name"></label>':''}
+ <label>Correo<input id="e" type="email" autocomplete="email"></label><label>Contraseña<input id="p" type="password" autocomplete="${mode==='login'?'current-password':'new-password'}"></label>
+ <p class="err" id="err"></p>
+ <div class="btns"><button id="go">${mode==='login'?'Entrar':'Registrarme'}</button>
+ <button class="ghost" id="sw">${mode==='login'?'Crear cuenta':'Ya tengo cuenta'}</button></div></div>`,true);
  $('#sw').onclick=()=>login(mode==='login'?'register':'login');
  $('#go').onclick=async()=>{try{const d=await api('/auth/'+mode,'POST',{name:$('#n')?.value,email:$('#e').value,password:$('#p').value});
   tok=d.token;me=d.user;localStorage.tok=tok;localStorage.me=JSON.stringify(me);groups()}catch(e){$('#err').textContent=e.message}};
 }
+
 async function groups(){
  const gs=await api('/groups');
- shell(`<div class="card"><h2>Mis grupos</h2>${gs.length?gs.map(g=>`<div class="row"><a class="g" onclick="group(${g.id})">${esc(g.name)}</a></div>`).join(''):'<p class="mute">Aún no tienes grupos. Crea el primero.</p>'}</div>
- <div class="card"><h2>Nuevo grupo</h2><input id="gn" placeholder="Ej. Viaje a Cartagena"><p class="err" id="err"></p><button id="mk">Crear grupo</button></div>`);
+ shell(`<div class="card">${hd('Mis grupos','users')}${gs.length?`<div class="glist">${gs.map(g=>`<a class="gcard" tabindex="0" onclick="group(${g.id})" onkeydown="if(event.key==='Enter')group(${g.id})">${av(g.name,'lg')}<span class="t">${esc(g.name)}</span>${ico('chev')}</a>`).join('')}</div>`:'<p class="empty">Aún no tienes grupos. Crea el primero.</p>'}</div>
+ <div class="card">${hd('Nuevo grupo','plus')}<div class="newg"><input id="gn" placeholder="Ej. Viaje a Cartagena"><button id="mk">${ico('plus')}Crear grupo</button></div><p class="err" id="err"></p></div>`);
  $('#mk').onclick=async()=>{try{const g=await api('/groups','POST',{name:$('#gn').value});group(g.id)}catch(e){$('#err').textContent=e.message}};
 }
+
+let splitMode='eq';
 async function group(id){
  const d=await api('/groups/'+id), name=Object.fromEntries(d.members.map(m=>[m.id,m.name]));
- shell(`<p><a class="g" onclick="groups()">← Mis grupos</a></p><h2>${esc(d.group.name)}</h2>
- <div class="card"><h2>Balances</h2>${d.members.map(m=>{const v=d.balances[m.id];return `<div class="row"><span>${esc(m.name)}</span><span class="${v>=0?'pos':'neg'}">${v>=0?'le deben ':'debe '}${money(Math.abs(v))}</span></div>`}).join('')}</div>
- <div class="card"><h2>Cómo saldar</h2>${d.transfers.length?d.transfers.map(t=>`<div class="row"><span>${esc(name[t.from])} paga a ${esc(name[t.to])}: <b>${money(t.amount)}</b></span>${t.from===me.id?`<button class="ghost" onclick="settle(${id},${t.to},${t.amount/100})">Marcar pagado</button>`:''}</div>`).join(''):'<p class="mute">Todo está saldado.</p>'}</div>
- <div class="card"><h2>Nuevo gasto</h2><input id="d" placeholder="Descripción"><input id="a" type="number" min="0" step="0.01" placeholder="Monto">
- <label>Pagó<select id="pb">${d.members.map(m=>`<option value="${m.id}" ${m.id===me.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label>
- <div>Dividir entre: ${d.members.map(m=>`<label class="chk"><input type="checkbox" class="pt" value="${m.id}" checked>${esc(m.name)}</label>`).join('')}</div>
- <p class="err" id="err"></p><button id="ad">Guardar gasto</button></div>
- <div class="card"><h2>Gastos</h2>${d.expenses.length?d.expenses.map(e=>`<div class="row"><span>${esc(e.description)}<br><span class="mute">Pagó ${esc(e.paid_by_name)}</span></span><span>${money(e.amount)} <button class="ghost" onclick="delExp(${id},${e.id})" aria-label="Eliminar">✕</button></span></div>`).join(''):'<p class="mute">Sin gastos todavía.</p>'}</div>
- <div class="card"><h2>Invitar miembro</h2><input id="em" type="email" placeholder="Correo de un usuario registrado"><p class="err" id="err2"></p><button id="inv">Agregar al grupo</button></div>`);
- $('#ad').onclick=async()=>{try{await api(`/groups/${id}/expenses`,'POST',{description:$('#d').value,amount:$('#a').value,paid_by:+$('#pb').value,participants:[...document.querySelectorAll('.pt:checked')].map(c=>+c.value)});group(id)}catch(e){$('#err').textContent=e.message}};
+ const total=d.expenses.reduce((s,e)=>s+e.amount,0), mine=d.balances[me.id]||0, max=Math.max(1,...d.members.map(m=>Math.abs(d.balances[m.id]||0))), bps=eqBps(d.members.length);
+ splitMode='eq';
+ shell(`<a class="back" tabindex="0" onclick="groups()" onkeydown="if(event.key==='Enter')groups()">${ico('back')} Mis grupos</a>
+ <div class="gtitle">${av(d.group.name,'lg')}<h2>${esc(d.group.name)}</h2></div>
+ <div class="stats">
+  <div class="stat"><small>${ico('wallet')}Total gastado</small><b>${money(total)}</b></div>
+  <div class="stat"><small>${ico('users')}Miembros</small><b>${d.members.length}</b></div>
+  <div class="stat"><small>${ico('scale')}Tu balance</small><b class="${mine>0?'pos':mine<0?'neg':''}">${mine>0?'+':mine<0?'−':''}${money(Math.abs(mine))}</b></div>
+ </div>
+ <div class="card">${hd('Balances','scale')}${d.members.map(m=>{const v=d.balances[m.id]||0;return `<div class="bal"><div class="top"><div class="who">${av(m.name)}<span>${esc(m.name)}</span></div>
+  ${v===0?'<span class="chip zero">al día</span>':`<span class="chip ${v>0?'pos':'neg'}">${v>0?'le deben ':'debe '}${money(Math.abs(v))}</span>`}</div>
+  <div class="bar"><i class="${v>=0?'pos':'neg'}" style="width:${Math.abs(v)/max*100}%"></i></div></div>`}).join('')}</div>
+ <div class="card">${hd('Cómo saldar','swap')}${d.transfers.length?d.transfers.map(t=>`<div class="tr"><div class="flow">${av(name[t.from],'sm')}<span>${esc(name[t.from])}</span>${ico('arrow')}${av(name[t.to],'sm')}<span>${esc(name[t.to])}</span></div><span class="amt">${money(t.amount)}</span>${t.from===me.id?`<button class="ghost sm" onclick="settle(${id},${t.to},${t.amount/100})">${ico('check')}Marcar pagado</button>`:''}</div>`).join(''):'<p class="empty">Todo está saldado. 🎉</p>'}</div>
+ <div class="card">${hd('Nuevo gasto','receipt')}
+  <div class="form-grid"><label class="full">Descripción<input id="d" placeholder="Ej. Cena en el centro"></label>
+  <label>Monto<input id="a" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" oninput="upd()"></label>
+  <label>Pagó<select id="pb">${d.members.map(m=>`<option value="${m.id}" ${m.id===me.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label></div>
+  <label>¿Cómo se reparte?</label>
+  <div class="seg"><button type="button" class="on" id="m-eq" onclick="setMode('eq')">${ico('equal')}Partes iguales</button><button type="button" id="m-pc" onclick="setMode('pc')">${ico('percent')}Porcentajes</button></div>
+  <div id="box-eq"><div class="who-pick">${d.members.map(m=>`<label class="chk"><input type="checkbox" class="pt" value="${m.id}" checked>${esc(m.name)}</label>`).join('')}</div></div>
+  <div id="box-pc" hidden>
+   <div class="hint">${ico('info')}<span>Escribe qué porcentaje del gasto le corresponde a cada persona. Por ejemplo, si tu compañero te debía dinero por otras cosas, ponle 70% y a ti 30%. Con <b>100%</b> en una sola persona, ella cubre todo el gasto.</span></div>
+   ${d.members.map((m,i)=>`<div class="prow"><div class="who">${av(m.name,'sm')}<span>${esc(m.name)}</span></div>
+    <div class="pin"><input class="pc" data-id="${m.id}" type="number" inputmode="decimal" min="0" max="100" step="0.01" value="${(bps[i]/100).toFixed(2)}" oninput="upd()" aria-label="Porcentaje de ${esc(m.name)}"><span class="pct">%</span></div>
+    <span class="pv" id="pv${m.id}"></span>
+    <button type="button" class="ghost sm" onclick="allTo(${m.id})" aria-label="Asignar 100% a ${esc(m.name)}">100%</button></div>`).join('')}
+   <div class="sumline"><span>Suma: <b id="sum" class="ok">100%</b></span><button type="button" class="ghost sm" onclick="eqAll()">${ico('equal')}Repartir igual</button></div>
+  </div>
+  <p class="err" id="err"></p><button class="block" id="ad">${ico('check')}Guardar gasto</button></div>
+ <div class="card">${hd('Gastos','receipt')}${d.expenses.length?d.expenses.map(e=>`<div class="exp"><span class="ic">${ico('receipt')}</span><div class="info"><b>${esc(e.description)}</b><span class="mute">Pagó ${esc(e.paid_by_name)}${fdate(e.created_at)?' · '+fdate(e.created_at):''}</span></div><span class="val">${money(e.amount)}</span><button class="ghost icon" onclick="delExp(${id},${e.id})" aria-label="Eliminar gasto">${ico('trash')}</button></div>`).join(''):'<p class="empty">Sin gastos todavía.</p>'}</div>
+ <div class="card">${hd('Invitar miembro','mail')}<input id="em" type="email" placeholder="Correo de un usuario registrado"><p class="err" id="err2"></p><button class="block" id="inv">${ico('plus')}Agregar al grupo</button></div>`);
+ $('#ad').onclick=async()=>{try{
+  const body={description:$('#d').value,amount:$('#a').value,paid_by:+$('#pb').value};
+  if(splitMode==='pc'){
+   const sp=[...document.querySelectorAll('.pc')].map(i=>({user_id:+i.dataset.id,percent:parseFloat(i.value)||0}));
+   if(sp.reduce((s,x)=>s+Math.round(x.percent*100),0)!==10000)throw new Error('Los porcentajes deben sumar exactamente 100%.');
+   body.splits=sp;
+  }else body.participants=[...document.querySelectorAll('.pt:checked')].map(c=>+c.value);
+  await api(`/groups/${id}/expenses`,'POST',body);group(id)}catch(e){$('#err').textContent=e.message}};
  $('#inv').onclick=async()=>{try{await api(`/groups/${id}/members`,'POST',{email:$('#em').value});group(id)}catch(e){$('#err2').textContent=e.message}};
 }
+
+/* ---------- Reparto por porcentajes ---------- */
+function setMode(m){
+ splitMode=m;
+ $('#box-eq').hidden=m!=='eq';$('#box-pc').hidden=m!=='pc';
+ $('#m-eq').classList.toggle('on',m==='eq');$('#m-pc').classList.toggle('on',m==='pc');
+ if(m==='pc')upd();
+}
+function upd(){ // recalcula la suma y cuánto le toca a cada uno
+ const amt=Math.round((parseFloat($('#a')?.value)||0)*100);let sum=0;
+ document.querySelectorAll('.pc').forEach(i=>{const bp=Math.round((parseFloat(i.value)||0)*100);sum+=bp;const pv=$('#pv'+i.dataset.id);if(pv)pv.textContent=money(Math.floor(amt*bp/10000))});
+ const s=$('#sum');if(s){s.textContent=(sum/100).toLocaleString('es-CO',{maximumFractionDigits:2})+'%';s.className=sum===10000?'ok':'bad'}
+}
+function allTo(uid){document.querySelectorAll('.pc').forEach(i=>{i.value=(+i.dataset.id===uid?100:0).toFixed(2)});upd()}
+function eqAll(){const ins=[...document.querySelectorAll('.pc')],b=eqBps(ins.length);ins.forEach((i,k)=>{i.value=(b[k]/100).toFixed(2)});upd()}
+
 async function settle(id,to,amount){await api(`/groups/${id}/settlements`,'POST',{to_user:to,amount});group(id)}
 async function delExp(id,e){if(confirm('¿Eliminar este gasto?')){await api(`/groups/${id}/expenses/${e}`,'DELETE');group(id)}}
 tok?groups().catch(()=>login()):login();
