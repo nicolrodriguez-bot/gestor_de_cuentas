@@ -1,14 +1,14 @@
+# Plan gratuito de Render: no admite discos persistentes, por eso la base de datos
+# se reinicia vacía y se cargan datos de demostración (SEED_DEMO=1) al arrancar.
+# Con un plan de pago, agregar un disco (disk: name/mountPath/sizeGB) y DB_PATH=/data/data.db.
 services:
   - type: web
     name: cuentas-claras
     runtime: docker
+    plan: free
     healthCheckPath: /api/health
     envVars:
       - key: JWT_SECRET
         generateValue: true
-      - key: DB_PATH
-        value: /data/data.db
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
+      - key: SEED_DEMO
+        value: "1"

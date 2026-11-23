@@ -56,6 +56,25 @@ function simplify(b) {
   return out;
 }
 
+// ---------- Datos de demostración ----------
+// Solo si SEED_DEMO=1 y la base está vacía. En planes sin disco persistente (Render gratuito)
+// la base se reinicia vacía, y así siempre existe una cuenta con la que iniciar sesión.
+if (process.env.SEED_DEMO === '1' && !db.prepare('SELECT 1 FROM users LIMIT 1').get()) {
+  tx(() => {
+    const pass = bcrypt.hashSync('demo1234', 10);
+    const addUser = (n, e) => Number(db.prepare('INSERT INTO users(name,email,password) VALUES(?,?,?)').run(n, e, pass).lastInsertRowid);
+    const ana = addUser('Ana (demo)', 'ana@demo.com'), luis = addUser('Luis (demo)', 'luis@demo.com');
+    const gid = Number(db.prepare('INSERT INTO groups(name,owner_id) VALUES(?,?)').run('Viaje a Cartagena', ana).lastInsertRowid);
+    [ana, luis].forEach(u => db.prepare('INSERT INTO members VALUES(?,?)').run(gid, u));
+    const addExpense = (desc, amount, parts) => {
+      const id = Number(db.prepare('INSERT INTO expenses(group_id,paid_by,amount,description) VALUES(?,?,?,?)').run(gid, ana, amount, desc).lastInsertRowid);
+      parts.forEach(p => db.prepare('INSERT INTO splits VALUES(?,?,?)').run(id, p.user_id, p.share));
+    };
+    addExpense('Almuerzo', 10000000, splitEqual(10000000, [ana, luis]));
+    addExpense('Cena (70% / 30%)', 20000000, splitByPercent(20000000, [{ user_id: luis, percent: 70 }, { user_id: ana, percent: 30 }]));
+  });
+}
+
 // ---------- API ----------
 const app = express();
 app.use(express.json());
